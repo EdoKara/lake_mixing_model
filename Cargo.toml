@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 float = "0.1.2"
+plotters = "0.3.5"
+iter_num_tools = "0.7.1"
+
