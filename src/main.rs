@@ -4,7 +4,7 @@ use iter_num_tools::lin_space;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let t_initial = lin_space(0.0..=10.0, 1000);
+    let t_initial = lin_space(0.0..=1.0, 1000);
     let latitude = 39.2;
     
     let mut angle: Vec<f64> = Vec::new();
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
-        .build_cartesian_2d(0f64..10f64, 0f64..1400f64)?;
+        .build_cartesian_2d(0f64..1f64, -100f64..1400f64)?;
 
     chart.configure_mesh().draw()?;
 
@@ -72,13 +72,12 @@ const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
 
 let sun_angle:f64 = 360.0*(t_initial % 24.0);
 
-let horiz_angle:f64 = 23.5*((360_f64*(t_initial/365.25)).sin()*CF);
+let horiz_angle:f64 = 23.5*(360_f64*((t_initial/365.25).sin()*CF));
 
 let η:f64 = 90.0 - ((
-    latitude.cos()*(horiz_angle.cos()*(sun_angle.cos())) + 
-    ((horiz_angle.sin())*(latitude.sin()))
-).acos()
-)*CF;
+    (latitude.cos()*horiz_angle.cos()*sun_angle.cos()) + 
+    (horiz_angle.sin()*latitude.sin())
+).acos())*CF;
 
 η
 }
