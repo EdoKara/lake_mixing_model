@@ -5,6 +5,7 @@ use time::macros::datetime;
 use time::{PrimitiveDateTime, Duration};
 use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let t_initial = lin_space(0.0..=1.0, 24);
