@@ -2,8 +2,9 @@
 use plotters::prelude::*;
 use iter_num_tools::lin_space;
 use time::macros::datetime;
-use time::{PrimitiveDateTime};
-
+use time::{PrimitiveDateTime, Duration};
+use rust_decimal::prelude::*;
+use rust_decimal_macros::dec;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let t_initial = lin_space(0.0..=1.0, 24);
@@ -64,22 +65,34 @@ let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
 radiation
 }
 
-fn sun_angle(t_initial:f64, latitude:f64, longitude:f64) -> f64{
+fn sun_angle(t_initial:Decimal, latitude:f64, longitude:f64) -> f64{
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
 
-//initial time is given in days since Jan 1
+//initial time is given in days since Jan 1 2023
 
 //be procedural and start with what day it is; this informs a lot of the position calculations
 //that NOAA does.
 
 const start_time: PrimitiveDateTime = datetime!(2023-01-01 00:00:00.00);
-const hours_to_seconds:f64 = 24.0*60.0*60.0;
-let seconds_initial = t_initial*hours_to_seconds;
-let time_since_start: PrimitiveDateTime = start_time + seconds_initial.seconds(); 
+let days_to_seconds:Decimal = dec!(24.0)*dec!(60.0)*dec!(60.0);
 
+let days_t_initial: i64 = (
+    t_initial
+    .floor()
+    .to_i64()
+)
+.unwrap();
 
+let days_t_initial: Duration = Duration::days(days_t_initial);
 
+let seconds_t_initial: Duration = Duration::seconds_f64(
+    (t_initial - t_initial.floor() * days_to_seconds)
+    .to_f64()
+    .unwrap()
+);
+
+let timestamp: i32 = (start_time + (days_t_initial + seconds_t_initial)).to_julian_day();
 
 }
