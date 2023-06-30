@@ -119,6 +119,8 @@ let obliq_corr:f64 = mean_eclip_obliq +
     .to_radians()
     .cos();
 
+
+
 }
 
 fn get_julian_day(t_initial:Decimal) -> Decimal {
