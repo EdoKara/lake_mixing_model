@@ -9,7 +9,7 @@ use rust_decimal_macros::dec;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let t_initial = lin_space(0.0..=1.0, 24);
-    let latitude = 39.2;
+    let latitude: f64 = 39.2;
     
     let mut angle: Vec<(f64,f64)> = Vec::new();
     let mut rad: Vec<(f64,f64)> = Vec::new();
@@ -63,7 +63,7 @@ let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
 radiation
 }
 
-fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64) -> f64{
+fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64{
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
@@ -119,6 +119,54 @@ let obliq_corr:f64 = mean_eclip_obliq +
     .to_radians()
     .cos();
 
+let sun_app_long:f64 = (sun_true_long-0.00569-0.00478*(
+        125.04-1934.136*jul_century.to_f64().unwrap())
+    .to_radians()
+    .sin())
+    .to_degrees();
+
+
+let sun_declin:f64 = ((obliq_corr.to_radians().sin()) * 
+    (sun_app_long
+        .to_radians()
+        .sin())
+        ).asin()
+        .to_degrees();
+
+let var_y:f64 = obliq_corr.powf(2.0);
+
+let eq_of_time_minutes: f64 =  (4.0*(var_y*2.0*geo_mean_long.to_radians()).to_degrees()-
+    2.0*eccentricity*(geo_mean_anom.to_radians()).sin()+4.0*eccentricity*var_y*
+    (geo_mean_anom.to_radians()).sin()*(geo_mean_anom.to_radians()).cos()
+    -0.5*var_y*var_y*(geo_mean_anom.to_radians()).cos()-1.25*eccentricity*eccentricity*
+    (2.0*(geo_mean_anom.to_radians()).sin())).to_degrees();
+
+let minutes_past_midnight: f64 = tot_julday.trunc().to_f64().unwrap()*24.0*60.0; //converting back to minutes 
+
+let true_solar_time: f64 = (
+    (
+        (
+            minutes_past_midnight*1440.0
+        )+eq_of_time_minutes+4.0
+    )*(longitude-60.0
+    )*timezone.to_f64()
+    .unwrap()
+) % 1400.0;
+
+let hour_angle: f64 = if true_solar_time/4.0 < 0.0{
+    (true_solar_time/4.0) - 180.0
+} else {
+    (true_solar_time/4.0) + 180.0
+};
+
+let solar_zenith_angle: f64 = (latitude.to_radians().sin().acos()
+    *(sun_declin.to_radians().sin() + 
+    latitude.to_radians().cos())*
+    sun_declin.to_radians().cos()*
+    hour_angle.to_radians().cos()
+    ).to_degrees();
+
+let elev_angle: f64 = 90 - solar_zenith_angle;
 
 
 }
