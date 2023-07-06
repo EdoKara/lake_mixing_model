@@ -10,15 +10,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let t_initial = lin_space(0.0..=1.0, 24);
     let latitude: f64 = 39.2;
+    let longitude:f64 = -86.5;
+    let timezone:i8 = -5;
     
     let mut angle: Vec<(f64,f64)> = Vec::new();
     let mut rad: Vec<(f64,f64)> = Vec::new();
     let mut ar: Vec<(f64,f64)> = Vec::new();
 
     for val in t_initial { 
-        angle.push((val, sun_angle(val, latitude))); //remember to make a tuple of X,Y to plot with instead of just 
-        rad.push((val, solar_radiation(val, latitude)));// a series. 
-        ar.push((val, solar_radiation(val, latitude)));
+        
+        angle.push((val, sun_position(, latitude, longitude, timezone))); //remember to make a tuple of X,Y to plot with instead of just 
+        rad.push((val, solar_radiation(dec!(val), latitude)));// a series. 
+        ar.push((val, solar_radiation( dec!(val), latitude)));
     };
 
     let root = BitMapBackend::new("./test.png", 
