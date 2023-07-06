@@ -63,7 +63,7 @@ let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
 radiation
 }
 
-fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64{
+fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> (f64,f64){
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
@@ -166,7 +166,23 @@ let solar_zenith_angle: f64 = (latitude.to_radians().sin().acos()
     hour_angle.to_radians().cos()
     ).to_degrees();
 
-let elev_angle: f64 = 90 - solar_zenith_angle;
+let elev_angle: f64 = 90.0 - solar_zenith_angle;
+
+let azimuth_angle: f64 = if hour_angle < 0.0 {
+    ((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos() - 
+sun_declin.to_radians().cos()) / (latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin())
+.acos() + 180.0
+    )
+    .to_degrees()
+    % 360.0
+} else {
+    (
+        ((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) - sun_declin.to_radians().sin()).acos()
+    / (latitude.to_radians().cos()*solar_zenith_angle.to_radians().sin())
+    ).to_degrees() % 360.0
+};
+
+(azimuth_angle, elev_angle)
 
 
 }
