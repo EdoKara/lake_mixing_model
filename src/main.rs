@@ -6,38 +6,60 @@ use time::{PrimitiveDateTime, Duration};
 use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 
+
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let t_initial = lin_space(0.0..=1.0, 24);
+    let t_initial = lin_space(dec!(0.0)..=dec!(2.5), 500);
     let latitude: f64 = 39.2;
     let longitude:f64 = -86.5;
     let timezone:i8 = -5;
     
     let mut angle: Vec<(f64,f64)> = Vec::new();
     let mut rad: Vec<(f64,f64)> = Vec::new();
-    let mut ar: Vec<(f64,f64)> = Vec::new();
+    //let mut ar: Vec<(f64,f64)> = Vec::new();
 
     for val in t_initial { 
         
-        angle.push((val, sun_position(, latitude, longitude, timezone))); //remember to make a tuple of X,Y to plot with instead of just 
-        rad.push((val, solar_radiation(dec!(val), latitude)));// a series. 
-        ar.push((val, solar_radiation( dec!(val), latitude)));
+        angle.push(
+            ( //opens tuple
+                val
+                .to_f64()
+                .unwrap(),
+                 sun_position(val, latitude, longitude, timezone).tot_julday.to_f64().unwrap()
+                ) //closes tuple
+            ); //remember to make a tuple of X,Y to plot with instead of just 
+
+        rad.push(
+            (
+                val
+                .to_f64()
+                .unwrap(),
+                solar_radiation(val, latitude, longitude, timezone)
+            )
+        )
     };
 
     let root = BitMapBackend::new("./test.png", 
-    (1920, 1080)).into_drawing_area();
+    (2000, 2000)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
-        .build_cartesian_2d(0f64..1f64, -90f64..90f64)?;
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d(0f64..2.5f64, 2459945f64..2459949f64)?;
 
-    chart.configure_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_labels(30)
+        .y_labels(30)
+        .draw()?;
 
     chart
         .draw_series(LineSeries::new(angle, &BLACK))?;
 
     chart
         .configure_series_labels()
-        .background_style(WHITE.mix(0.8))
+        .background_style(BLACK.mix(0.8))
         .border_style(BLACK)
         .draw()?;
 
@@ -46,7 +68,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
  
-fn solar_radiation(t_initial: f64, latitude:f64) -> f64 {
+
+
+fn solar_radiation(t_initial: Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64 {
 //calculate the incident solar radiation for a lake based upon the time of the year. 
 
 //Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
@@ -57,16 +81,29 @@ fn solar_radiation(t_initial: f64, latitude:f64) -> f64 {
 //const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
 
 
-let θ:f64 = sun_angle(t_initial, latitude);
+let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
 
-let airmass:f64 = 1_f64/(θ.cos());
+let airmass:f64 = 1.0/(eangle.cos());
 
 let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
 
 radiation
 }
 
-fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> (f64,f64){
+struct SunPosition{
+    tot_julday:Decimal, jul_century:Decimal,
+    geo_mean_long:f64, geo_mean_anom:f64,
+    eccentricity:f64, sun_center:f64,
+    sun_true_long:f64, mean_eclip_obliq:f64,
+    obliq_corr:f64, sun_app_long:f64,
+    sun_declin:f64, var_y:f64,
+    eq_of_time_minutes: f64, minutes_past_midnight: f64,
+    true_solar_time: f64, hour_angle: f64,
+    solar_zenith_angle: f64, elev_angle: f64,
+    azimuth_angle: f64
+}
+
+fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
@@ -95,7 +132,7 @@ let sun_center:f64 = (geo_mean_anom.to_radians().sin()
 
 let sun_true_long:f64 = geo_mean_long + sun_center;
 
-let sun_app_long:f64 = sun_true_long - 0.00569 - 0.00478 
+let _sun_app_long:f64 = sun_true_long - 0.00569 - 0.00478 
     * (125.04-1934.136*jul_century.to_f64().unwrap()).to_radians().sin();
 
 
@@ -185,9 +222,20 @@ sun_declin.to_radians().cos()) / (latitude.to_radians().cos() * solar_zenith_ang
     ).to_degrees() % 360.0
 };
 
-(azimuth_angle, elev_angle)
+let out = SunPosition{
+    tot_julday:tot_julday, jul_century:jul_century,
+    geo_mean_long:geo_mean_long, geo_mean_anom:geo_mean_anom,
+    eccentricity:eccentricity, sun_center:sun_center,
+    sun_true_long:sun_true_long, mean_eclip_obliq:mean_eclip_obliq,
+    obliq_corr:obliq_corr, sun_app_long:sun_app_long,
+    sun_declin:sun_declin, var_y:var_y,
+    eq_of_time_minutes:eq_of_time_minutes, minutes_past_midnight: minutes_past_midnight,
+    true_solar_time:true_solar_time, hour_angle:hour_angle,
+    solar_zenith_angle: solar_zenith_angle, elev_angle:elev_angle,
+    azimuth_angle:azimuth_angle
+};
 
-
+out
 }
 
 fn get_julian_day(t_initial:Decimal) -> Decimal {
@@ -197,37 +245,29 @@ fn get_julian_day(t_initial:Decimal) -> Decimal {
 //be procedural and start with what day it is; this informs a lot of the position calculations
 //that NOAA does.
 
-    const start_time: PrimitiveDateTime = datetime!(2023-01-01 00:00:00.00);
-    let days_to_seconds:Decimal = dec!(24.0)*dec!(60.0)*dec!(60.0);
+    const START_TIME: PrimitiveDateTime = datetime!(2023-01-01 00:00:00.00);
+    let days_to_seconds:Decimal = dec!(86400);
     
-    let days_t_initial: i64 = (
-        t_initial
-        .floor()
-        .to_i64()
-    )
-    .unwrap();
+    let days_t_initial: i64 = t_initial.trunc().to_i64().unwrap();
     
-    let days_t_initial: Duration = Duration::days(days_t_initial);
+    let days_t_initial_dur: Duration = Duration::days(days_t_initial);
     
     let seconds_t_initial: Duration = Duration::seconds_f64(
-        ((t_initial - t_initial.floor()) * days_to_seconds)
+        ((t_initial - t_initial.trunc()) * days_to_seconds)
         .to_f64()
         .unwrap()
     );
     
-    let julday: f64 = (start_time + (days_t_initial + seconds_t_initial))
+    let julday: Decimal = Decimal::from_f64(
+        (START_TIME + (days_t_initial_dur + seconds_t_initial))
         .to_julian_day()
         .to_f64()
+        .unwrap())
         .unwrap();
+       
     
-    let julday: Decimal = Decimal::from_f64(julday)
-        .unwrap();
-    
-    let frac_julday: Decimal = 
-        t_initial - t_initial.floor() *
-        (dec!(1.0)/dec!(24.0)*dec!(60.0)*dec!(60.0)); //conversion factor for julian seconds per day.
-    
-    let tot_julday: Decimal = julday + frac_julday;
+    let tot_julday: Decimal = julday + t_initial.fract();
 
     return tot_julday
 }
+
