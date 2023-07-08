@@ -26,8 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 val
                 .to_f64()
                 .unwrap(),
-                 sun_position(val, latitude, longitude, timezone).tot_julday.to_f64().unwrap()
-                ) //closes tuple
+                 sun_position(val, latitude, longitude, timezone).sun_app_long) //closes tuple
             ); //remember to make a tuple of X,Y to plot with instead of just 
 
         rad.push(
@@ -44,9 +43,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     (2000, 2000)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(0f64..2.5f64, 2459945f64..2459949f64)?;
+        .x_label_area_size(90)
+        .y_label_area_size(90)
+        .build_cartesian_2d(0f64..2.5f64, 277f64..284f64)?;
 
     chart
         .configure_mesh()
@@ -108,32 +107,36 @@ fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
 
-let tot_julday:Decimal = get_julian_day(t_initial);
+let tot_julday:Decimal = get_julian_day(t_initial); //works as intended
 let jul_century:Decimal = (tot_julday
-    - dec!(2451545)) / dec!(36525); //conversion to julian century. 
+    - dec!(2451545)) / dec!(36525); //conversion to julian century. works as intended
 
-let geo_mean_long: f64 = (280.46646+jul_century.to_f64().unwrap()
-    *(36000.76983+jul_century.to_f64()
-    .unwrap()*0.0003032)) % 360.0;
 
-let geo_mean_anom: f64  = 357.52911+jul_century.to_f64().unwrap()
+
+let geo_mean_long:f64 = (280.46646 + (
+    (jul_century.to_f64().unwrap())*((36000.76893+(jul_century.to_f64().unwrap()))*0.0003032)
+))%360.0;
+
+let geo_mean_anom: f64  = 357.52911+jul_century.to_f64().unwrap() //works right
     *(35999.05029-0.0001537*jul_century.to_f64().unwrap());
 
-let eccentricity:f64 = 0.016708634-
+let eccentricity:f64 = 0.016708634- //works
     jul_century.to_f64().unwrap()*
     (0.000042037+0.0000001267*jul_century.to_f64().unwrap());
 
-let sun_center:f64 = (geo_mean_anom.to_radians().sin()
+let sun_center:f64 = (geo_mean_anom.to_radians().sin() //works
     *(1.914602-jul_century.to_f64().unwrap()*
     (0.004817+0.000014*jul_century.to_f64().unwrap())))
     + (2_f64*geo_mean_anom.to_radians().sin() *
     (0.019993-0.000101*jul_century.to_f64().unwrap())) + 
     (3_f64*geo_mean_anom.to_radians().sin()*0.000289);
 
-let sun_true_long:f64 = geo_mean_long + sun_center;
+let sun_true_long:f64 = &geo_mean_long + &sun_center; //works
 
-let _sun_app_long:f64 = sun_true_long - 0.00569 - 0.00478 
-    * (125.04-1934.136*jul_century.to_f64().unwrap()).to_radians().sin();
+// =M2-0.00569-0.00478*SIN(RADIANS(125.04-1934.136*G2));
+
+let sun_app_long:f64 = (sun_true_long - 0.00569 - 0.00478 
+    * (125.04-(1934.136*jul_century.to_f64().unwrap()))).to_radians().sin();
 
 
 let mean_eclip_obliq:f64 = 23.0 +
