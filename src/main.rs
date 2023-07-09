@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut chart = ChartBuilder::on(&root)
         .x_label_area_size(90)
         .y_label_area_size(90)
-        .build_cartesian_2d(0f64..2.5f64, 277f64..284f64)?;
+        .build_cartesian_2d(0f64..2.5f64, 270f64..290f64)?;
 
     chart
         .configure_mesh()
@@ -133,13 +133,12 @@ let sun_center:f64 = (geo_mean_anom.to_radians().sin() //works
 
 let sun_true_long:f64 = &geo_mean_long + &sun_center; //works
 
-// =M2-0.00569-0.00478*SIN(RADIANS(125.04-1934.136*G2));
 
-let sun_app_long:f64 = (sun_true_long - 0.00569 - 0.00478 
-    * (125.04-(1934.136*jul_century.to_f64().unwrap()))).to_radians().sin();
+let sun_app_long:f64 = sun_true_long - 0.00569 - 0.00478 * 
+125.04 - (1934.136 * (jul_century.to_f64().unwrap())).to_radians().sin(); //works
 
 
-let mean_eclip_obliq:f64 = 23.0 +
+let mean_eclip_obliq:f64 = 23.0 + //works
     (26.0 +
         (
             (21.448-jul_century.to_f64().unwrap()*(
@@ -153,7 +152,7 @@ let mean_eclip_obliq:f64 = 23.0 +
 )
     /60.0;
 
-let obliq_corr:f64 = mean_eclip_obliq + 
+let obliq_corr:f64 = mean_eclip_obliq + //works
     0.00256*(
         125.04-1934.136*jul_century
         .to_f64()
@@ -161,12 +160,6 @@ let obliq_corr:f64 = mean_eclip_obliq +
     )
     .to_radians()
     .cos();
-
-let sun_app_long:f64 = (sun_true_long-0.00569-0.00478*(
-        125.04-1934.136*jul_century.to_f64().unwrap())
-    .to_radians()
-    .sin())
-    .to_degrees();
 
 
 let sun_declin:f64 = ((obliq_corr.to_radians().sin()) * 
