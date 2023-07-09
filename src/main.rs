@@ -8,63 +8,66 @@ use rust_decimal_macros::dec;
 
 
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
-    let t_initial = lin_space(dec!(0.0)..=dec!(2.5), 500);
+    
+    let t_initial = dec!(0.0); //lin_space(dec!(0.0)..=dec!(2.5), 500);
     let latitude: f64 = 39.2;
     let longitude:f64 = -86.5;
     let timezone:i8 = -5;
+
+    println!("{}",sun_position(t_initial,latitude,longitude,timezone).geo_mean_long);
     
-    let mut angle: Vec<(f64,f64)> = Vec::new();
-    let mut rad: Vec<(f64,f64)> = Vec::new();
-    //let mut ar: Vec<(f64,f64)> = Vec::new();
+    // let mut angle: Vec<(f64,f64)> = Vec::new();
+    // let mut rad: Vec<(f64,f64)> = Vec::new();
+    // //let mut ar: Vec<(f64,f64)> = Vec::new();
 
-    for val in t_initial { 
+    // for val in t_initial { 
         
-        angle.push(
-            ( //opens tuple
-                val
-                .to_f64()
-                .unwrap(),
-                 sun_position(val, latitude, longitude, timezone).sun_app_long) //closes tuple
-            ); //remember to make a tuple of X,Y to plot with instead of just 
+    //     angle.push(
+    //         ( //opens tuple
+    //             val
+    //             .to_f64()
+    //             .unwrap(),
+    //              sun_position(val, latitude, longitude, timezone).eq_of_time_minutes) //closes tuple
+    //         ); //remember to make a tuple of X,Y to plot with instead of just 
 
-        rad.push(
-            (
-                val
-                .to_f64()
-                .unwrap(),
-                solar_radiation(val, latitude, longitude, timezone)
-            )
-        )
-    };
+    //     rad.push(
+    //         (
+    //             val
+    //             .to_f64()
+    //             .unwrap(),
+    //             solar_radiation(val, latitude, longitude, timezone)
+    //         )
+    //     )
+    // };
 
-    let root = BitMapBackend::new("./test.png", 
-    (2000, 2000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .x_label_area_size(90)
-        .y_label_area_size(90)
-        .build_cartesian_2d(0f64..2.5f64, 270f64..290f64)?;
+    // let root = BitMapBackend::new("./test.png", 
+    // (2000, 2000)).into_drawing_area();
+    // root.fill(&WHITE)?;
+    // let mut chart = ChartBuilder::on(&root)
+    //     .x_label_area_size(90)
+    //     .y_label_area_size(90)
+    //     .build_cartesian_2d(0f64..2.5f64, -3f64..-4f64)?;
 
-    chart
-        .configure_mesh()
-        .x_labels(30)
-        .y_labels(30)
-        .draw()?;
+    // chart
+    //     .configure_mesh()
+    //     .x_labels(30)
+    //     .y_labels(30)
+    //     .draw()?;
 
-    chart
-        .draw_series(LineSeries::new(angle, &BLACK))?;
+    // chart
+    //     .draw_series(LineSeries::new(angle, &BLACK))?;
 
-    chart
-        .configure_series_labels()
-        .background_style(BLACK.mix(0.8))
-        .border_style(BLACK)
-        .draw()?;
+    // chart
+    //     .configure_series_labels()
+    //     .background_style(BLACK.mix(0.8))
+    //     .border_style(BLACK)
+    //     .draw()?;
 
-    root.present()?;
+    // root.present()?;
 
-    Ok(())
+    // Ok(())
 }
  
 
@@ -90,7 +93,7 @@ radiation
 }
 
 struct SunPosition{
-    tot_julday:Decimal, jul_century:Decimal,
+    tot_julday:Decimal, jul_century:f64,
     geo_mean_long:f64, geo_mean_anom:f64,
     eccentricity:f64, sun_center:f64,
     sun_true_long:f64, mean_eclip_obliq:f64,
@@ -108,17 +111,14 @@ fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> 
 //elevation angles and use that as inputs to the function. 
 
 let tot_julday:Decimal = get_julian_day(t_initial); //works as intended
-let jul_century:Decimal = (tot_julday
-    - dec!(2451545)) / dec!(36525); //conversion to julian century. works as intended
+let jul_century:f64 = ((tot_julday- dec!(2451545)) / dec!(36525)).to_f64().unwrap(); //conversion to julian century. works as intended
 
 
+let geo_mean_long:f64 = 
+(280.46646 + jul_century * (36000.76893 + jul_century * 0.0003032)) % 360.0;
 
-let geo_mean_long:f64 = (280.46646 + (
-    (jul_century.to_f64().unwrap())*((36000.76893+(jul_century.to_f64().unwrap()))*0.0003032)
-))%360.0;
-
-let geo_mean_anom: f64  = 357.52911+jul_century.to_f64().unwrap() //works right
-    *(35999.05029-0.0001537*jul_century.to_f64().unwrap());
+let geo_mean_anom: f64  = 357.52911+((jul_century.to_f64().unwrap()) //works right
+    *(35999.05029-0.0001537*(jul_century.to_f64().unwrap())));
 
 let eccentricity:f64 = 0.016708634- //works
     jul_century.to_f64().unwrap()*
@@ -162,20 +162,44 @@ let obliq_corr:f64 = mean_eclip_obliq + //works
     .cos();
 
 
-let sun_declin:f64 = ((obliq_corr.to_radians().sin()) * 
+let sun_declin:f64 = ((obliq_corr.to_radians().sin()) * //works
     (sun_app_long
         .to_radians()
         .sin())
         ).asin()
         .to_degrees();
 
-let var_y:f64 = obliq_corr.powf(2.0);
+let var_y:f64 = ((obliq_corr/2.0).to_radians()).tan()
+                *((obliq_corr/2.0).to_radians()).tan(); //works
 
-let eq_of_time_minutes: f64 =  (4.0*(var_y*2.0*geo_mean_long.to_radians()).to_degrees()-
-    2.0*eccentricity*(geo_mean_anom.to_radians()).sin()+4.0*eccentricity*var_y*
-    (geo_mean_anom.to_radians()).sin()*(geo_mean_anom.to_radians()).cos()
-    -0.5*var_y*var_y*(geo_mean_anom.to_radians()).cos()-1.25*eccentricity*eccentricity*
-    (2.0*(geo_mean_anom.to_radians()).sin())).to_degrees();
+
+// =4*
+// DEGREES(2*SIN(2*RADIANS(I2))- //done
+//         2* K2* SIN(RADIANS(J2))+ //done 
+//         4*K2*U2*SIN(RADIANS(J2))*COS(2*RADIANS(I2))- //done
+//         0.5*U2*U2*SIN(4*RADIANS(I2))- //done
+//         1.25*K2*K2*SIN(2*RADIANS(J2))) //done
+
+let eq_of_time_minutes:f64 = (
+                            (
+                            ((((geo_mean_long.to_radians())*2.0).sin())*2.0) -
+                            (2.0 * eccentricity * geo_mean_anom.to_radians().sin()) +
+                            (4.0 * eccentricity * var_y * (geo_mean_anom.to_radians().sin()) * 
+                                ((2.0*geo_mean_long.to_radians()).cos())) - 
+                            (0.5 * var_y * var_y * (4.0*geo_mean_anom.to_radians()).sin()) - 
+                            (1.25 * eccentricity * eccentricity * (2.0*geo_mean_anom.to_radians()).sin())
+                        )
+                            .to_degrees()
+                        ) * 4.0;
+                            
+
+
+
+// let eq_of_time_minutes: f64 =  (4.0*(var_y*2.0*geo_mean_long.to_radians()).to_degrees()-
+//     2.0*eccentricity*(geo_mean_anom.to_radians()).sin()+4.0*eccentricity*var_y*
+//     (geo_mean_anom.to_radians()).sin()*(geo_mean_anom.to_radians()).cos()
+//     -0.5*var_y*var_y*(geo_mean_anom.to_radians()).cos()-1.25*eccentricity*eccentricity*
+//     (2.0*(geo_mean_anom.to_radians()).sin())).to_degrees();
 
 let minutes_past_midnight: f64 = tot_julday.trunc().to_f64().unwrap()*24.0*60.0; //converting back to minutes 
 
