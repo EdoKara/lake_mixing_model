@@ -11,13 +11,38 @@ use rust_decimal_macros::dec;
 fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
     
-    let t_initial = dec!(0.0); //lin_space(dec!(0.0)..=dec!(2.5), 500);
-    let latitude: f64 = 39.2;
+    let t_initial = datetime!(2010-01-01 12:00:00); //lin_space(dec!(0.0)..=dec!(2.5), 500);
+    let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
-    let timezone:i8 = -5;
+    let timezone:i8 = -7;
 
-    println!("{}",sun_position(t_initial,latitude,longitude,timezone).geo_mean_long);
+    let sp = sun_position(t_initial,latitude,longitude,timezone);
+
     
+    println!("julian days: {:?}, 
+    Julian Century: {:?},
+    geo_mean_long: {:?},
+    geo_mean_anom: {:?},
+    eccentricity: {:?},
+    sun_center: {:?},
+    sun_true_long: {:?},
+    mean_eclip_obliq: {:?},
+    obliq_corr: {:?},
+    sun_app_long: {:?},
+    sun_declin: {:?},
+    var_y: {:?},
+    eq_of_time_minutes: {:?},
+    minutes_past_midnight: {:?},
+    true_solar_time: {:?},
+    hour_angle: {:?},
+    solar_zenith_angle: {:?},
+    elev_angle: {:?},
+    azimuth_angle: {:?}",
+    sp.tot_julday,sp.jul_century,sp.geo_mean_long,sp.geo_mean_anom,sp.eccentricity,
+    sp.sun_center,sp.sun_true_long, sp.mean_eclip_obliq,sp.obliq_corr, sp.sun_app_long,sp.sun_declin,sp.var_y,
+    sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
+    sp.azimuth_angle)
+
     // let mut angle: Vec<(f64,f64)> = Vec::new();
     // let mut rad: Vec<(f64,f64)> = Vec::new();
     // //let mut ar: Vec<(f64,f64)> = Vec::new();
@@ -72,25 +97,25 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
  
 
 
-fn solar_radiation(t_initial: Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64 {
-//calculate the incident solar radiation for a lake based upon the time of the year. 
+// fn solar_radiation(t_initial: Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64 {
+// //calculate the incident solar radiation for a lake based upon the time of the year. 
 
-//Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
+// //Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
 
-//this boils down mostly to angle.
-
-
-//const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
+// //this boils down mostly to angle.
 
 
-let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
+// //const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
 
-let airmass:f64 = 1.0/(eangle.cos());
 
-let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
+// let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
 
-radiation
-}
+// let airmass:f64 = 1.0/(eangle.cos());
+
+// let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
+
+// radiation
+// }
 
 struct SunPosition{
     tot_julday:Decimal, jul_century:f64,
@@ -105,23 +130,32 @@ struct SunPosition{
     azimuth_angle: f64
 }
 
-fn sun_position(t_initial:Decimal, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
+
+
+
+
+fn sun_position(t_initial:PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
 //elevation angles and use that as inputs to the function. 
 
-let tot_julday:Decimal = get_julian_day(t_initial); //works as intended
+let tot_julday:Decimal = get_julian_day(t_initial, timezone); //works as intended
 let jul_century:f64 = ((tot_julday- dec!(2451545)) / dec!(36525)).to_f64().unwrap(); //conversion to julian century. works as intended
 
-
+//=MOD(280.46646+G2*(36000.76983+G2*0.0003032),360)
 let geo_mean_long:f64 = 
-(280.46646 + jul_century * (36000.76893 + jul_century * 0.0003032)) % 360.0;
+(280.46646 + jul_century * (36000.76983 + jul_century * 0.0003032)) % 360.0;
 
-let geo_mean_anom: f64  = 357.52911+((jul_century.to_f64().unwrap()) //works right
-    *(35999.05029-0.0001537*(jul_century.to_f64().unwrap())));
+//=357.52911+G2*(35999.05029-0.0001537*G2)
 
-let eccentricity:f64 = 0.016708634- //works
-    jul_century.to_f64().unwrap()*
+let geo_mean_anom: f64  = 357.52911+(jul_century.to_f64().unwrap()) //works right
+    *(35999.05029-0.0001537*jul_century.to_f64().unwrap());
+
+
+// =0.016708634-G2*(0.000042037+0.0000001267*G2)
+    
+let eccentricity:f64 = 0.016708634 - //works
+    jul_century.to_f64().unwrap() *
     (0.000042037+0.0000001267*jul_century.to_f64().unwrap());
 
 let sun_center:f64 = (geo_mean_anom.to_radians().sin() //works
@@ -174,23 +208,19 @@ let var_y:f64 = ((obliq_corr/2.0).to_radians()).tan()
 
 
 // =4*
-// DEGREES(2*SIN(2*RADIANS(I2))- //done
-//         2* K2* SIN(RADIANS(J2))+ //done 
-//         4*K2*U2*SIN(RADIANS(J2))*COS(2*RADIANS(I2))- //done
-//         0.5*U2*U2*SIN(4*RADIANS(I2))- //done
-//         1.25*K2*K2*SIN(2*RADIANS(J2))) //done
+// DEGREES(2*SIN(2*RADIANS(geo mean long))- //done
+//         2* eccentricity* SIN(RADIANS(geo mean anom))+ //done 
+//         4*eccentricity*var y*SIN(RADIANS(geo mean anom))*COS(2*RADIANS(geo mean long))- //done
+//         0.5*var y*var y*SIN(4*RADIANS(geo mean long))- //done
+//         1.25*eccentricity* eccentricity *SIN(2*RADIANS(geo mean anom))) //done
 
-let eq_of_time_minutes:f64 = (
-                            (
-                            ((((geo_mean_long.to_radians())*2.0).sin())*2.0) -
-                            (2.0 * eccentricity * geo_mean_anom.to_radians().sin()) +
-                            (4.0 * eccentricity * var_y * (geo_mean_anom.to_radians().sin()) * 
-                                ((2.0*geo_mean_long.to_radians()).cos())) - 
-                            (0.5 * var_y * var_y * (4.0*geo_mean_anom.to_radians()).sin()) - 
-                            (1.25 * eccentricity * eccentricity * (2.0*geo_mean_anom.to_radians()).sin())
-                        )
-                            .to_degrees()
-                        ) * 4.0;
+let eq_of_time_minutes:f64 = 
+    4.0 * (2.0*(2.0*geo_mean_long.to_radians()).sin()).to_degrees() - 
+    2.0 * eccentricity * geo_mean_anom.to_radians().sin() + 
+    4.0 * eccentricity * var_y * geo_mean_anom.to_radians().sin() * (2.0*geo_mean_long.to_radians()).cos() -
+    0.5 * var_y * var_y * (4.0* geo_mean_long.to_radians()).sin() - 
+    1.25 * eccentricity * eccentricity * (2.0*geo_mean_anom.to_radians()).sin();
+
                             
 
 
@@ -258,36 +288,23 @@ let out = SunPosition{
 out
 }
 
-fn get_julian_day(t_initial:Decimal) -> Decimal {
+fn get_julian_day(datetime:PrimitiveDateTime, timezone:i8) -> Decimal {
 
-//initial time is given in days since Jan 1 2023
+    // get julian day with the same methodology as the 
+    //NOAA paper; implements fractional julian days. 
 
-//be procedural and start with what day it is; this informs a lot of the position calculations
-//that NOAA does.
+    let baseday: i32 = datetime.to_julian_day();
+    let hms = datetime.as_hms();
+    let hours:Decimal = <u8 as Into<Decimal>>::into(hms.0) / dec!(24);
+    let minutes:Decimal = <u8 as Into<Decimal>>::into(hms.1)/dec!(1440);
+    let seconds:Decimal = <u8 as Into<Decimal>>::into(hms.2)/dec!(86400);
+    let frac_julianday: Decimal = hours + minutes + seconds;
 
-    const START_TIME: PrimitiveDateTime = datetime!(2023-01-01 00:00:00.00);
-    let days_to_seconds:Decimal = dec!(86400);
-    
-    let days_t_initial: i64 = t_initial.trunc().to_i64().unwrap();
-    
-    let days_t_initial_dur: Duration = Duration::days(days_t_initial);
-    
-    let seconds_t_initial: Duration = Duration::seconds_f64(
-        ((t_initial - t_initial.trunc()) * days_to_seconds)
-        .to_f64()
-        .unwrap()
-    );
-    
-    let julday: Decimal = Decimal::from_f64(
-        (START_TIME + (days_t_initial_dur + seconds_t_initial))
-        .to_julian_day()
-        .to_f64()
-        .unwrap())
-        .unwrap();
-       
-    
-    let tot_julday: Decimal = julday + t_initial.fract();
+    let tz:Decimal = <i8 as Into<Decimal>>::into(timezone);
+    let cf:Decimal = tz/dec!(24);
 
-    return tot_julday
+    let julday = <i32 as Into<Decimal>>::into(baseday) + frac_julianday;
+    julday
+    
 }
 
