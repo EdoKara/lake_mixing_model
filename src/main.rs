@@ -214,22 +214,38 @@ let var_y:f64 = ((obliq_corr/2.0).to_radians()).tan()
 //         0.5*var y*var y*SIN(4*RADIANS(geo mean long))- //done
 //         1.25*eccentricity* eccentricity *SIN(2*RADIANS(geo mean anom))) //done
 
-let eq_of_time_minutes:f64 = 
-    4.0 * (2.0*(2.0*geo_mean_long.to_radians()).sin()).to_degrees() - 
-    2.0 * eccentricity * geo_mean_anom.to_radians().sin() + 
-    4.0 * eccentricity * var_y * geo_mean_anom.to_radians().sin() * (2.0*geo_mean_long.to_radians()).cos() -
-    0.5 * var_y * var_y * (4.0* geo_mean_long.to_radians()).sin() - 
-    1.25 * eccentricity * eccentricity * (2.0*geo_mean_anom.to_radians()).sin();
-
-                            
 
 
+// let t_initial_day:f64 = t_initial.day().into();
+// let t_initial_year:f64 = t_initial.year().into();
 
-// let eq_of_time_minutes: f64 =  (4.0*(var_y*2.0*geo_mean_long.to_radians()).to_degrees()-
-//     2.0*eccentricity*(geo_mean_anom.to_radians()).sin()+4.0*eccentricity*var_y*
-//     (geo_mean_anom.to_radians()).sin()*(geo_mean_anom.to_radians()).cos()
-//     -0.5*var_y*var_y*(geo_mean_anom.to_radians()).cos()-1.25*eccentricity*eccentricity*
-//     (2.0*(geo_mean_anom.to_radians()).sin())).to_degrees();
+// let eq_of_time_minutes:f64 = 
+//     -7.659 * (6.24004077 + 0.01720197*(365.25*((t_initial_year - 2000.0)+ t_initial_day))).sin() +
+//     9.863 * (2.0 * (6.24004077 + 0.01720197 * (365.25 * (t_initial_year - 2000.0) + t_initial_day)) + 3.5932);
+
+//=4
+//*DEGREES(var_y*SIN(2*RADIANS(geo_mean_long))
+//-2*eccentricity*SIN(RADIANS(geo_mean_anom))
+//+4*eccentricity*var_y*SIN(RADIANS(geo_mean_anom))*COS(2*RADIANS(geo_mean_long))
+//-0.5*var_y*var_y*SIN(4*RADIANS(geo_mean_long))
+//-1.25*eccentricity*eccentricity*SIN(2*RADIANS(geo_mean_anom)))
+
+
+// let eq_of_time_minutes: f64 =  4.0 
+// * ((geo_mean_long.to_radians()*2.0).sin() * var_y).to_degrees()
+// - 2.0 * eccentricity * geo_mean_anom.to_radians().sin() + 
+// 4.0 * eccentricity * var_y * geo_mean_anom.to_radians().sin() * (geo_mean_long.to_radians()*2.0).cos()
+// - 0.5 * var_y * var_y * (geo_mean_long.to_radians()*4.0).sin() 
+// - 1.25 * eccentricity * eccentricity * (geo_mean_anom.to_radians()*2.0).sin();
+
+let eq_of_time_minutes: f64 = 4.0 * (
+
+(var_y * (geo_mean_long.to_radians()*2.0).sin()) - 
+(2.0*eccentricity*geo_mean_anom.to_radians().sin()) +
+(4.0*eccentricity*var_y*geo_mean_anom.to_radians().sin() * (2.0*geo_mean_long.to_radians()).cos()) -
+(0.5*var_y*var_y*(4.0*geo_mean_long.to_radians()).sin()) - 
+(1.25*eccentricity*eccentricity* (2.0*geo_mean_anom.to_radians()).sin())
+).to_degrees();
 
 let minutes_past_midnight: f64 = tot_julday.trunc().to_f64().unwrap()*24.0*60.0; //converting back to minutes 
 
