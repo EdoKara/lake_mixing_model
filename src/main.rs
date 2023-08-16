@@ -207,62 +207,31 @@ let var_y:f64 = ((obliq_corr/2.0).to_radians()).tan()
                 *((obliq_corr/2.0).to_radians()).tan(); //works
 
 
-// =4*
-// DEGREES(2*SIN(2*RADIANS(geo mean long))- //done
-//         2* eccentricity* SIN(RADIANS(geo mean anom))+ //done 
-//         4*eccentricity*var y*SIN(RADIANS(geo mean anom))*COS(2*RADIANS(geo mean long))- //done
-//         0.5*var y*var y*SIN(4*RADIANS(geo mean long))- //done
-//         1.25*eccentricity* eccentricity *SIN(2*RADIANS(geo mean anom))) //done
 
-
-
-// let t_initial_day:f64 = t_initial.day().into();
-// let t_initial_year:f64 = t_initial.year().into();
-
-// let eq_of_time_minutes:f64 = 
-//     -7.659 * (6.24004077 + 0.01720197*(365.25*((t_initial_year - 2000.0)+ t_initial_day))).sin() +
-//     9.863 * (2.0 * (6.24004077 + 0.01720197 * (365.25 * (t_initial_year - 2000.0) + t_initial_day)) + 3.5932);
-
-//=4
-//*DEGREES(var_y*SIN(2*RADIANS(geo_mean_long))
-//-2*eccentricity*SIN(RADIANS(geo_mean_anom))
-//+4*eccentricity*var_y*SIN(RADIANS(geo_mean_anom))*COS(2*RADIANS(geo_mean_long))
-//-0.5*var_y*var_y*SIN(4*RADIANS(geo_mean_long))
-//-1.25*eccentricity*eccentricity*SIN(2*RADIANS(geo_mean_anom)))
-
-
-// let eq_of_time_minutes: f64 =  4.0 
-// * ((geo_mean_long.to_radians()*2.0).sin() * var_y).to_degrees()
-// - 2.0 * eccentricity * geo_mean_anom.to_radians().sin() + 
-// 4.0 * eccentricity * var_y * geo_mean_anom.to_radians().sin() * (geo_mean_long.to_radians()*2.0).cos()
-// - 0.5 * var_y * var_y * (geo_mean_long.to_radians()*4.0).sin() 
-// - 1.25 * eccentricity * eccentricity * (geo_mean_anom.to_radians()*2.0).sin();
-
-let eq_of_time_minutes: f64 = 4.0 * (
-
-(var_y * (geo_mean_long.to_radians()*2.0).sin()) - 
+let eq_of_time_minutes: f64 = 4.0 * ( // the parentheses order is very particular here; had to check
+(var_y * (geo_mean_long.to_radians()*2.0).sin()) - //equation builder in libreoffice to make sure I got it right.
 (2.0*eccentricity*geo_mean_anom.to_radians().sin()) +
 (4.0*eccentricity*var_y*geo_mean_anom.to_radians().sin() * (2.0*geo_mean_long.to_radians()).cos()) -
 (0.5*var_y*var_y*(4.0*geo_mean_long.to_radians()).sin()) - 
 (1.25*eccentricity*eccentricity* (2.0*geo_mean_anom.to_radians()).sin())
 ).to_degrees();
 
-let minutes_past_midnight: f64 = tot_julday.trunc().to_f64().unwrap()*24.0*60.0; //converting back to minutes 
+let hms = t_initial.as_hms();
+let hours:Decimal = <u8 as Into<Decimal>>::into(hms.0) / dec!(24);
+let minutes:Decimal = <u8 as Into<Decimal>>::into(hms.1)/dec!(1440);
+let seconds:Decimal = <u8 as Into<Decimal>>::into(hms.2)/dec!(86400);
+
+let minutes_past_midnight:Decimal = (hours + minutes + seconds)*dec!(1440);
 
 let true_solar_time: f64 = (
-    (
-        (
-            minutes_past_midnight*1440.0
-        )+eq_of_time_minutes+4.0
-    )*(longitude-60.0
-    )*timezone.to_f64()
-    .unwrap()
-) % 1400.0;
+    ((minutes_past_midnight.to_f64().unwrap() + eq_of_time_minutes) + 4.0 * longitude) -
+    (60.0 * timezone.to_f64().unwrap()))
+    % 1400.0;
 
-let hour_angle: f64 = if true_solar_time/4.0 < 0.0{
+let hour_angle: f64 = if true_solar_time <= 720.0{
     (true_solar_time/4.0) - 180.0
 } else {
-    (true_solar_time/4.0) + 180.0
+    (true_solar_time/4.0)
 };
 
 let solar_zenith_angle: f64 = (latitude.to_radians().sin().acos()
@@ -295,7 +264,7 @@ let out = SunPosition{
     sun_true_long:sun_true_long, mean_eclip_obliq:mean_eclip_obliq,
     obliq_corr:obliq_corr, sun_app_long:sun_app_long,
     sun_declin:sun_declin, var_y:var_y,
-    eq_of_time_minutes:eq_of_time_minutes, minutes_past_midnight: minutes_past_midnight,
+    eq_of_time_minutes:eq_of_time_minutes, minutes_past_midnight: minutes_past_midnight.to_f64().unwrap(),
     true_solar_time:true_solar_time, hour_angle:hour_angle,
     solar_zenith_angle: solar_zenith_angle, elev_angle:elev_angle,
     azimuth_angle:azimuth_angle
