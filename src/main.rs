@@ -8,7 +8,7 @@ use rust_decimal_macros::dec;
 
 
 
-fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
+fn main() -> Result<(), Box<dyn std::error::Error>>  { //
 
     
     let t_initial = datetime!(2010-01-01 12:01:00); //lin_space(dec!(0.0)..=dec!(2.5), 500);
@@ -43,82 +43,82 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
         sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
         sp.azimuth_angle);
 
-    let dates = get_dt_range(datetime!(2010-01-01 00:00:01), datetime!(
-        2020-01-01 00:10:05), 200000);
-    print!("{:?}",dates)
-    // let mut angle: Vec<(f64,f64)> = Vec::new();
-    // let mut rad: Vec<(f64,f64)> = Vec::new();
-    // //let mut ar: Vec<(f64,f64)> = Vec::new();
+    let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
+        2011-01-01 00:00:00), 1000000);
+    
 
-    // for val in t_initial { 
-        
-    //     angle.push(
-    //         ( //opens tuple
-    //             val
-    //             .to_f64()
-    //             .unwrap(),
-    //              sun_position(val, latitude, longitude, timezone).eq_of_time_minutes) //closes tuple
-    //         ); //remember to make a tuple of X,Y to plot with instead of just 
+    let mut positions:Vec<SunPosition> = Vec::with_capacity(dates.len());
+    
+    let date_iter = dates.iter();
+    for date in date_iter{
+        positions.push(sun_position(*date, latitude, longitude, timezone))
+    };
 
-    //     rad.push(
-    //         (
-    //             val
-    //             .to_f64()
-    //             .unwrap(),
-    //             solar_radiation(val, latitude, longitude, timezone)
-    //         )
-    //     )
-    // };
+    let mut elev_angle:Vec<f64> = Vec::with_capacity(positions.capacity());
+   for position in positions.iter(){
+        elev_angle.push(position.elev_angle)
+   }
 
-    // let root = BitMapBackend::new("./test.png", 
-    // (2000, 2000)).into_drawing_area();
-    // root.fill(&WHITE)?;
-    // let mut chart = ChartBuilder::on(&root)
-    //     .x_label_area_size(90)
-    //     .y_label_area_size(90)
-    //     .build_cartesian_2d(0f64..2.5f64, -3f64..-4f64)?;
+   let mut indices: Vec<f64> = Vec::with_capacity(positions.capacity());
+   for index in 0..positions.iter().len(){
+    indices.push(index as f64);
+   }
 
-    // chart
-    //     .configure_mesh()
-    //     .x_labels(30)
-    //     .y_labels(30)
-    //     .draw()?;
+   let mut points: Vec<(f64,f64)> = Vec::new();
+   for item in indices.iter(){
+    points.push((*item, elev_angle[*item as usize]))
+   }
 
-    // chart
-    //     .draw_series(LineSeries::new(angle, &BLACK))?;
 
-    // chart
-    //     .configure_series_labels()
-    //     .background_style(BLACK.mix(0.8))
-    //     .border_style(BLACK)
-    //     .draw()?;
+    let root = BitMapBackend::new("./test.png", 
+    (10000, 2000)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .x_label_area_size(900)
+        .y_label_area_size(900)
+        .build_cartesian_2d(0f64..1000000f64, -180f64..180f64)?;
 
-    // root.present()?;
+    chart
+        .configure_mesh()
+        .x_labels(30)
+        .y_labels(30)
+        .draw()?;
 
-    // Ok(())
+    chart
+        .draw_series(LineSeries::new(points, &BLACK))?;
+
+    chart
+        .configure_series_labels()
+        .background_style(BLACK.mix(0.8))
+        .border_style(BLACK)
+        .draw()?;
+
+    root.present()?;
+
+    Ok(())
 }
  
 
 
-// fn solar_radiation(t_initial: Decimal, latitude:f64, longitude:f64, timezone:i8) -> f64 {
-// //calculate the incident solar radiation for a lake based upon the time of the year. 
+fn solar_radiation(t_initial: PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> f64 {
+//calculate the incident solar radiation for a lake based upon the time of the year. 
 
-// //Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
+//Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
 
-// //this boils down mostly to angle.
-
-
-// //const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
+//this boils down mostly to angle.
 
 
-// let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
+//const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
 
-// let airmass:f64 = 1.0/(eangle.cos());
 
-// let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
+let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
 
-// radiation
-// }
+let airmass:f64 = 1.0/(eangle.cos());
+
+let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
+
+radiation
+}
 
 struct SunPosition{
     tot_julday:Decimal, jul_century:f64,
