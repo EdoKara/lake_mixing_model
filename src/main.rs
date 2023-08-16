@@ -238,7 +238,7 @@ let solar_zenith_angle: f64 = (((latitude.to_radians().sin()
 
 let elev_angle: f64 = 90.0 - solar_zenith_angle;
 
-let azimuth_angle: f64 = 
+let azimuth_angle: f64 = //TODO: Correct this part
 
 if hour_angle > 0.0 {
     ((((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) - 
