@@ -228,34 +228,27 @@ let true_solar_time: f64 = (
     (60.0 * timezone.to_f64().unwrap()))
     % 1400.0;
 
-let hour_angle: f64 = if true_solar_time <= 720.0{
-    (true_solar_time/4.0) - 180.0
-} else {
-    (true_solar_time/4.0)
-};
+let hour_angle: f64 = (true_solar_time/4.0)-180.0;
 
-let solar_zenith_angle: f64 = (latitude.to_radians().sin().acos()
-    *(sun_declin.to_radians().sin() + 
-    latitude.to_radians().cos())*
-    sun_declin.to_radians().cos()*
-    hour_angle.to_radians().cos()
-    ).to_degrees();
+let solar_zenith_angle: f64 = (((latitude.to_radians().sin()
+    *(sun_declin.to_radians().sin())) + 
+    (latitude.to_radians().cos())*sun_declin.to_radians().cos()*
+    hour_angle.to_radians().cos())   
+    ).acos().to_degrees();
 
 let elev_angle: f64 = 90.0 - solar_zenith_angle;
 
-let azimuth_angle: f64 = if hour_angle < 0.0 {
-    ((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos() - 
-sun_declin.to_radians().cos()) / (latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin())
-.acos() + 180.0
-    )
-    .to_degrees()
-    % 360.0
+let azimuth_angle: f64 = 
+
+if hour_angle > 0.0 {
+    ((((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) - 
+    sun_declin.to_radians().sin()) /
+    latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin()).acos().to_degrees() + 180.0) % 360.0
 } else {
-    (
-        ((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) - sun_declin.to_radians().sin()).acos()
-    / (latitude.to_radians().cos()*solar_zenith_angle.to_radians().sin())
-    ).to_degrees() % 360.0
-};
+(540.0 -
+((((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) -
+sun_declin.to_radians().sin()) / (latitude.to_radians().cos()* solar_zenith_angle.to_radians().sin()))
+.acos().to_degrees())) % 360.0};
 
 let out = SunPosition{
     tot_julday:tot_julday, jul_century:jul_century,
