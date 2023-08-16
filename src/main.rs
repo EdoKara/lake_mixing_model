@@ -49,8 +49,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
 
     let mut positions:Vec<SunPosition> = Vec::with_capacity(dates.len());
     
-    let date_iter = dates.iter();
-    for date in date_iter{
+
+    for date in dates.iter(){
         positions.push(sun_position(*date, latitude, longitude, timezone))
     };
 
@@ -103,7 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
 fn solar_radiation(t_initial: PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> f64 {
 //calculate the incident solar radiation for a lake based upon the time of the year. 
 
-//Assuming no cloud cover, N hemisphere, and no other influencing factors (i.e. the raw solar radiation coming in)
+//Assuming no other influencing factors (i.e. the raw solar radiation coming in)
 
 //this boils down mostly to angle.
 
@@ -132,10 +132,6 @@ struct SunPosition{
     solar_zenith_angle: f64, elev_angle: f64,
     azimuth_angle: f64
 }
-
-
-
-
 
 fn sun_position(t_initial:PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
 
@@ -321,3 +317,12 @@ datevec
 
 }
 
+//Next item of business: calculate the heating which happens for the radiation
+// also: setting up the box model for the lake
+// also: refraction w/ depth
+// also: reflection from the surface
+
+
+//A lot of this stuff depends on the same fixed sun position parameters. It would be ideal to
+//get all the sun params into a unified position in memory and then access all of it from each
+//function as a thread. This would make it a lot faster to calculate the later steps. 
