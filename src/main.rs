@@ -11,13 +11,13 @@ use rust_decimal_macros::dec;
 fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
     
-    let t_initial = datetime!(2010-01-01 12:00:00); //lin_space(dec!(0.0)..=dec!(2.5), 500);
+    let t_initial = datetime!(2010-01-01 12:01:00); //lin_space(dec!(0.0)..=dec!(2.5), 500);
     let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
     let timezone:i8 = -7;
 
     let sp = sun_position(t_initial,latitude,longitude,timezone);
-
+    
     
     println!("julian days: {:?}, 
     Julian Century: {:?},
@@ -41,8 +41,11 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
     sp.tot_julday,sp.jul_century,sp.geo_mean_long,sp.geo_mean_anom,sp.eccentricity,
     sp.sun_center,sp.sun_true_long, sp.mean_eclip_obliq,sp.obliq_corr, sp.sun_app_long,sp.sun_declin,sp.var_y,
     sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
-    sp.azimuth_angle)
+    sp.azimuth_angle);
 
+    let dates = get_dt_range(datetime!(2010-01-01 00:00:01), datetime!(
+        2020-01-01 00:10:05), 200000);
+    print!("{:?}",dates)
     // let mut angle: Vec<(f64,f64)> = Vec::new();
     // let mut rad: Vec<(f64,f64)> = Vec::new();
     // //let mut ar: Vec<(f64,f64)> = Vec::new();
@@ -241,14 +244,18 @@ let elev_angle: f64 = 90.0 - solar_zenith_angle;
 let azimuth_angle: f64 = //TODO: Correct this part
 
 if hour_angle > 0.0 {
-    ((((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) - 
-    sun_declin.to_radians().sin()) /
-    latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin()).acos().to_degrees() + 180.0) % 360.0
+    (((latitude.to_radians().sin() * solar_zenith_angle.to_radians().sin() - sun_declin.to_radians().sin())
+    /
+    (latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin()))
+    .acos().to_degrees()
+    + 180.0) % 360.0
 } else {
-(540.0 -
-((((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos()) -
-sun_declin.to_radians().sin()) / (latitude.to_radians().cos()* solar_zenith_angle.to_radians().sin()))
-.acos().to_degrees())) % 360.0};
+    (540.0 - ((latitude.to_radians().sin() * solar_zenith_angle.to_radians().cos() - sun_declin.to_radians().sin())
+    /
+    (latitude.to_radians().cos() * solar_zenith_angle.to_radians().sin())).acos().to_degrees()) % 360.0
+
+
+};
 
 let out = SunPosition{
     tot_julday:tot_julday, jul_century:jul_century,
@@ -284,5 +291,33 @@ fn get_julian_day(datetime:PrimitiveDateTime, timezone:i8) -> Decimal {
     let julday = <i32 as Into<Decimal>>::into(baseday) + frac_julianday;
     julday
     
+}
+
+fn get_dt_range(t_initial:PrimitiveDateTime, t_final:PrimitiveDateTime, points: u32) -> 
+Vec<PrimitiveDateTime> {
+
+let timegap:Duration = (t_final - t_initial).abs();
+let interval_res:Duration = timegap
+    .checked_div(
+        points.try_into().unwrap())
+        .unwrap_or_else(||{Duration::new(0,0)});
+
+let mut datevec: Vec<PrimitiveDateTime> = Vec::with_capacity(points.try_into().unwrap());
+
+let mut counter:u32 = points;
+datevec.push(t_initial);
+counter -=1;
+
+while counter > 0 {
+    let time_point:PrimitiveDateTime = 
+    t_initial.saturating_add((points-counter) * interval_res);
+    datevec.push(time_point);
+    counter -=1;
+}
+datevec.push(t_final);
+
+datevec
+
+
 }
 
