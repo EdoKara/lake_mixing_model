@@ -1,4 +1,6 @@
 
+use std::ops::Range;
+
 use plotters::prelude::*;
 use iter_num_tools::lin_space;
 use time::macros::datetime;
@@ -69,6 +71,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
     points.push((*item, elev_angle[*item as usize]))
    }
 
+   let radvec: Vec<(f64, f64)> = Vec::new();
+   for angle in elev_angle.iter(){
+
+   }
+
+   let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..1000000.0, 0.0..1360.0);
 
     let root = BitMapBackend::new("./test.png", 
     (10000, 2000)).into_drawing_area();
@@ -100,20 +108,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
  
 
 
-fn solar_radiation(t_initial: PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> f64 {
-//calculate the incident solar radiation for a lake based upon the time of the year. 
+fn solar_radiation(elev_angle: f64) -> f64 {
 
-//Assuming no other influencing factors (i.e. the raw solar radiation coming in)
-
-//this boils down mostly to angle.
+    ///Calculates the direct solar radiation. This means that it's solar radiation before the 
+    /// influence of clouds, weather, etc. It mostly boils down to angle & some atmospheric influence.
 
 
-//const CF:f64 = 180.0/PI; //conversion factor between radians and degrees.
-
-
-let eangle:f64 = sun_position(t_initial, latitude, longitude, timezone).elev_angle;
-
-let airmass:f64 = 1.0/(eangle.cos());
+let airmass:f64 = 1.0/(elev_angle.cos());
 
 let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
 
@@ -317,6 +318,37 @@ datevec
 
 }
 
+fn plot(path:&str, dimx:u32, dimy:u32, datavec:Vec<(f64,f64)>, xcart:Range<f64>, ycart:Range<f64>) -> Result<(), Box<dyn std::error::Error>> { 
+
+    let root = BitMapBackend::new(path, 
+    (dimx, dimy)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .x_label_area_size(900)
+        .y_label_area_size(900)
+        .build_cartesian_2d(xcart, ycart)?;
+
+    chart
+        .configure_mesh()
+        .x_labels(30)
+        .y_labels(30)
+        .draw()?;
+
+    chart
+        .draw_series(LineSeries::new(datavec, &BLACK))?;
+
+    chart
+        .configure_series_labels()
+        .background_style(BLACK.mix(0.8))
+        .border_style(BLACK)
+        .draw()?;
+
+    root.present()?;
+
+    Ok(())
+
+}
+
 //Next item of business: calculate the heating which happens for the radiation
 // also: setting up the box model for the lake
 // also: refraction w/ depth
@@ -326,3 +358,5 @@ datevec
 //A lot of this stuff depends on the same fixed sun position parameters. It would be ideal to
 //get all the sun params into a unified position in memory and then access all of it from each
 //function as a thread. This would make it a lot faster to calculate the later steps. 
+
+//TODO: Put the attributes you want in a giant polars table

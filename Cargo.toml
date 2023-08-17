@@ -12,3 +12,4 @@ iter_num_tools = "0.7.1"
 time = {version="0.3.22", features=["macros"]}
 rust_decimal = "1.30"
 rust_decimal_macros = "1.30"
+polars = "0.32.1"
