@@ -134,6 +134,14 @@ struct SunPosition{
     azimuth_angle: f64
 }
 
+impl SunPosition{
+    fn solar_radiation(&self) -> f64{
+        let airmass:f64 = 1.0/self.elev_angle.cos();
+        1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64))
+    }
+    
+}
+
 fn sun_position(t_initial:PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
 
 //we're going to do some more sophisticated stuff here; I want to find the azimuth and 
