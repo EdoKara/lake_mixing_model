@@ -13,7 +13,7 @@ use rust_decimal_macros::dec;
 fn main() -> Result<(), Box<dyn std::error::Error>>  { //
 
     
-    let t_initial = datetime!(2010-01-01 12:01:00); //lin_space(dec!(0.0)..=dec!(2.5), 500);
+    let t_initial = datetime!(2010-01-01 12:01:00); 
     let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
     let timezone:i8 = -7;
@@ -45,7 +45,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
         sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
         sp.azimuth_angle);
 
-    let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
+    println!("{},{},{}",sp.refracted(), sp.reflection(), sp.solar_radiation());
+        let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
         2011-01-01 00:00:00), 1000000);
     
 
@@ -140,6 +141,20 @@ impl SunPosition{
         1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64))
     }
     
+    fn reflection(&self) -> f64{
+        let angle:f64 = self.solar_zenith_angle;
+        let r_s: f64 = -((angle - self.refracted()).sin() / (angle + self.refracted()).sin());
+        let r_p: f64 = (angle - self.refracted()).tan() / (angle+self.refracted()).tan();
+        let r: f64 = 0.5 * (r_s + r_p);
+        let reflection = r.abs().powf(2.0);
+        r_p
+    }
+
+    fn refracted(&self)->f64{
+        //snell's law dictates that sin(a1)/n_21 = sin(a2)
+        let refracted = self.solar_zenith_angle.sin().to_degrees()/1.33;
+        refracted
+    }
 }
 
 fn sun_position(t_initial:PrimitiveDateTime, latitude:f64, longitude:f64, timezone:i8) -> SunPosition{
