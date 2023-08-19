@@ -10,10 +10,10 @@ use rust_decimal_macros::dec;
 
 
 
-fn main() -> Result<(), Box<dyn std::error::Error>>  { //
+fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
     
-    let t_initial = datetime!(2010-01-01 12:01:00); 
+    let t_initial = datetime!(2010-01-01 15:01:00); 
     let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
     let timezone:i8 = -7;
@@ -45,9 +45,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
         sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
         sp.azimuth_angle);
 
-    println!("{},{},{}",sp.refracted(), sp.reflection(), sp.solar_radiation());
+    println!("refraction angle: {}, Reflectance: {}, solar radiation: {}",sp.refracted().to_degrees(), sp.reflection(), sp.solar_radiation());
         let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
-        2011-01-01 00:00:00), 1000000);
+        2011-01-01 00:00:00), 10);
     
 
     let mut positions:Vec<SunPosition> = Vec::with_capacity(dates.len());
@@ -77,34 +77,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  { //
 
    }
 
-   let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..1000000.0, 0.0..1360.0);
+//    let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..1000000.0, 0.0..1360.0);
 
-    let root = BitMapBackend::new("./test.png", 
-    (10000, 2000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .x_label_area_size(900)
-        .y_label_area_size(900)
-        .build_cartesian_2d(0f64..1000000f64, -180f64..180f64)?;
+//     let root = BitMapBackend::new("./test.png", 
+//     (10000, 2000)).into_drawing_area();
+//     root.fill(&WHITE)?;
+//     let mut chart = ChartBuilder::on(&root)
+//         .x_label_area_size(900)
+//         .y_label_area_size(900)
+//         .build_cartesian_2d(0f64..1000000f64, -180f64..180f64)?;
 
-    chart
-        .configure_mesh()
-        .x_labels(30)
-        .y_labels(30)
-        .draw()?;
+//     chart
+//         .configure_mesh()
+//         .x_labels(30)
+//         .y_labels(30)
+//         .draw()?;
 
-    chart
-        .draw_series(LineSeries::new(points, &BLACK))?;
+//     chart
+//         .draw_series(LineSeries::new(points, &BLACK))?;
 
-    chart
-        .configure_series_labels()
-        .background_style(BLACK.mix(0.8))
-        .border_style(BLACK)
-        .draw()?;
+//     chart
+//         .configure_series_labels()
+//         .background_style(BLACK.mix(0.8))
+//         .border_style(BLACK)
+//         .draw()?;
 
-    root.present()?;
+//     root.present()?;
 
-    Ok(())
+//     Ok(())
 }
  
 
@@ -141,19 +141,22 @@ impl SunPosition{
         1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64))
     }
     
-    fn reflection(&self) -> f64{
-        let angle:f64 = self.solar_zenith_angle;
-        let r_s: f64 = -((angle - self.refracted()).sin() / (angle + self.refracted()).sin());
-        let r_p: f64 = (angle - self.refracted()).tan() / (angle+self.refracted()).tan();
+    fn reflection(&self) -> f64{ //need to do some logical work on the incident angle
+        let angle:f64 = self.solar_zenith_angle.to_radians();
+        let n_i = 1.000;
+        let n_t = 1.333;
+        let r_s: f64 = (n_i * angle.cos() - n_t * self.refracted().cos()) / (n_i*angle.cos() + n_t*self.refracted().cos());
+        let r_p: f64 = (n_i*self.refracted().cos() - n_t*angle) / (n_i*self.refracted().cos() + n_t * angle.cos());
         let r: f64 = 0.5 * (r_s + r_p);
-        let reflection = r.abs().powf(2.0);
+        let reflectance:f64 = r.abs().powf(2.0);
         r_p
     }
 
     fn refracted(&self)->f64{
         //snell's law dictates that sin(a1)/n_21 = sin(a2)
-        let refracted = self.solar_zenith_angle.sin().to_degrees()/1.33;
-        refracted
+        let refracted = self.solar_zenith_angle.sin()/1.33;
+        let out = refracted.asin();
+        out
     }
 }
 
@@ -374,7 +377,7 @@ fn plot(path:&str, dimx:u32, dimy:u32, datavec:Vec<(f64,f64)>, xcart:Range<f64>,
 
 //Next item of business: calculate the heating which happens for the radiation
 // also: setting up the box model for the lake
-// also: refraction w/ depth
+// also: refraction Done
 // also: reflection from the surface
 
 
