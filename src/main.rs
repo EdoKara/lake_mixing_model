@@ -72,13 +72,16 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
     points.push((*item, elev_angle[*item as usize]))
    }
 
-   let radvec: Vec<(f64, f64)> = Vec::new();
+   let mut radvec: Vec<(f64, f64)> = Vec::new();
    let mut rads: Vec<f64> = Vec::with_capacity(positions.capacity());
    for position in positions.iter(){
         rads.push(position.solar_radiation())
    }
+   for item in indices.iter(){
+    radvec.push((*item,rads[*item as usize]))
+   }
 
-   let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..86400.0, 0.0..1360.0);
+   let _ = plot("./radiation.png", 2000,2000,radvec, 0.0..86400.0, 0.0..1360.0);
 
 //     let root = BitMapBackend::new("./test.png", 
 //     (10000, 2000)).into_drawing_area();
