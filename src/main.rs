@@ -2,7 +2,6 @@
 use std::ops::Range;
 
 use plotters::prelude::*;
-use iter_num_tools::lin_space;
 use time::macros::datetime;
 use time::{PrimitiveDateTime, Duration};
 use rust_decimal::prelude::*;
@@ -13,7 +12,7 @@ use rust_decimal_macros::dec;
 fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
     
-    let t_initial = datetime!(2010-01-01 15:01:00); 
+    let t_initial = datetime!(2010-06-21 15:30:00); 
     let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
     let timezone:i8 = -7;
@@ -39,15 +38,16 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
         hour_angle: {:?},
         solar_zenith_angle: {:?},
         elev_angle: {:?},
-        azimuth_angle: {:?}",
+        azimuth_angle: {:?},
+        sun up?: {:?}",
         sp.tot_julday,sp.jul_century,sp.geo_mean_long,sp.geo_mean_anom,sp.eccentricity,
         sp.sun_center,sp.sun_true_long, sp.mean_eclip_obliq,sp.obliq_corr, sp.sun_app_long,sp.sun_declin,sp.var_y,
         sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
-        sp.azimuth_angle);
+        sp.azimuth_angle, sp.sunup);
 
     println!("refraction angle: {}, Reflectance: {}, solar radiation: {}",sp.refracted().to_degrees(), sp.reflection(), sp.solar_radiation());
         let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
-        2011-01-01 00:00:00), 10);
+        2010-01-02 00:00:00), 86400);
     
 
     let mut positions:Vec<SunPosition> = Vec::with_capacity(dates.len());
@@ -73,11 +73,12 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
    }
 
    let radvec: Vec<(f64, f64)> = Vec::new();
-   for angle in elev_angle.iter(){
-
+   let mut rads: Vec<f64> = Vec::with_capacity(positions.capacity());
+   for position in positions.iter(){
+        rads.push(position.solar_radiation())
    }
 
-//    let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..1000000.0, 0.0..1360.0);
+   let _ = plot("./radiation.png", 10000,2000,radvec, 0.0..86400.0, 0.0..1360.0);
 
 //     let root = BitMapBackend::new("./test.png", 
 //     (10000, 2000)).into_drawing_area();
@@ -107,21 +108,6 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 //     Ok(())
 }
  
-
-
-fn solar_radiation(elev_angle: f64) -> f64 {
-
-    ///Calculates the direct solar radiation. This means that it's solar radiation before the 
-    /// influence of clouds, weather, etc. It mostly boils down to angle & some atmospheric influence.
-
-
-let airmass:f64 = 1.0/(elev_angle.cos());
-
-let radiation:f64 = 1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64));
-
-radiation
-}
-
 struct SunPosition{
     tot_julday:Decimal, jul_century:f64,
     geo_mean_long:f64, geo_mean_anom:f64,
@@ -132,31 +118,54 @@ struct SunPosition{
     eq_of_time_minutes: f64, minutes_past_midnight: f64,
     true_solar_time: f64, hour_angle: f64,
     solar_zenith_angle: f64, elev_angle: f64,
-    azimuth_angle: f64
+    azimuth_angle: f64, sunup:bool
 }
 
 impl SunPosition{
-    fn solar_radiation(&self) -> f64{
-        let airmass:f64 = 1.0/self.elev_angle.cos();
-        1353.0 * (0.7_f64).powf((airmass).powf(0.678_f64))
+    fn solar_radiation(&self) -> f64{ //TODO: test where there are holes in the solar radiation function by making a plot for it.
+        match self.sunup { true =>{
+        let airmass:f64 = 1.0/self.solar_zenith_angle.to_radians().cos();
+        let interior_exp:f64 = airmass.abs().powf(0.678);
+        let radiation: f64 = 1353.0 *(0.7_f64.powf(interior_exp));
+        radiation
     }
+    ,false => {0.0}
+    }}
+
     
-    fn reflection(&self) -> f64{ //need to do some logical work on the incident angle
-        let angle:f64 = self.solar_zenith_angle.to_radians();
-        let n_i = 1.000;
-        let n_t = 1.333;
-        let r_s: f64 = (n_i * angle.cos() - n_t * self.refracted().cos()) / (n_i*angle.cos() + n_t*self.refracted().cos());
-        let r_p: f64 = (n_i*self.refracted().cos() - n_t*angle) / (n_i*self.refracted().cos() + n_t * angle.cos());
-        let r: f64 = 0.5 * (r_s + r_p);
-        let reflectance:f64 = r.abs().powf(2.0);
-        r_p
+    fn reflection(&self) -> f64{ //the model doesn't work if your ZA is greater than 90. Need some logic to handle. 
+        
+        match self.sunup{ 
+
+            true =>
+            {
+            let angle:f64 = self.solar_zenith_angle.to_radians();
+            let n_i = 1.000;
+            let n_t = 1.333;
+            let r_s: f64 = ((n_i * angle.cos()) - (n_t * self.refracted().cos())) / ((n_i*angle.cos()) + (n_t*self.refracted().cos()));
+            let r_p: f64 = ((n_i*self.refracted().cos()) - (n_t*angle.cos())) / ((n_i*self.refracted().cos()) + (n_t * angle.cos()));
+            let r: f64 = 0.5 * (r_s + r_p);
+            let reflectance:f64 = r.powi(2);
+            reflectance
+
+        },
+
+            false => {0.0}}
     }
 
     fn refracted(&self)->f64{
-        //snell's law dictates that sin(a1)/n_21 = sin(a2)
-        let refracted = self.solar_zenith_angle.sin()/1.33;
-        let out = refracted.asin();
-        out
+        match self.sunup {
+            true => {//snell's law dictates that sin(a1)/n_21 = sin(a2)
+            let n_i:f64 = 1.000;
+            let n_t:f64 = 1.333;
+            let ratio:f64 = n_i/n_t;
+            let refracted = self.solar_zenith_angle.to_radians().sin()* ratio;
+            let out = refracted.asin();
+            out
+        },
+            false =>{0.0}
+        }
+        
     }
 }
 
@@ -280,6 +289,8 @@ if hour_angle > 0.0 {
 
 };
 
+let sunup:bool = if solar_zenith_angle <= 90.0 {true} else {false};
+
 let out = SunPosition{
     tot_julday:tot_julday, jul_century:jul_century,
     geo_mean_long:geo_mean_long, geo_mean_anom:geo_mean_anom,
@@ -290,7 +301,7 @@ let out = SunPosition{
     eq_of_time_minutes:eq_of_time_minutes, minutes_past_midnight: minutes_past_midnight.to_f64().unwrap(),
     true_solar_time:true_solar_time, hour_angle:hour_angle,
     solar_zenith_angle: solar_zenith_angle, elev_angle:elev_angle,
-    azimuth_angle:azimuth_angle
+    azimuth_angle:azimuth_angle, sunup:sunup
 };
 
 out
