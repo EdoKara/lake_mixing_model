@@ -12,12 +12,12 @@ use rust_decimal_macros::dec;
 fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
     
-    let t_initial = datetime!(2010-06-21 15:30:00); 
+    let t_initial: PrimitiveDateTime = datetime!(2010-06-21 15:30:00); 
     let latitude: f64 = 40.0;
     let longitude:f64 = -86.5;
     let timezone:i8 = -7;
 
-    let sp = sun_position(t_initial,latitude,longitude,timezone);
+    let sp: SunPosition = sun_position(t_initial,latitude,longitude,timezone);
     
     
     println!("julian days: {:?}, 
@@ -389,10 +389,10 @@ fn plot(path:&str, dimx:u32, dimy:u32, datavec:Vec<(f64,f64)>, xcart:Range<f64>,
 
 }
 
-//Next item of business: calculate the heating which happens for the radiation
+//Next item of business: calculate the heating which happens for the radiation - start in 1-d w/ a control surface
 // also: setting up the box model for the lake
-// also: refraction Done
-// also: reflection from the surface
+// also: refraction Done✅
+// also: reflection from the surface Done ✅
 
 
 //A lot of this stuff depends on the same fixed sun position parameters. It would be ideal to
