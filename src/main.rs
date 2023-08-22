@@ -45,9 +45,9 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
         sp.eq_of_time_minutes, sp.minutes_past_midnight, sp.true_solar_time, sp.hour_angle,sp.solar_zenith_angle,sp.elev_angle,
         sp.azimuth_angle, sp.sunup);
 
-    println!("refraction angle: {}, Reflectance: {}, solar radiation: {}",sp.refracted().to_degrees(), sp.reflection(), sp.solar_radiation());
+    println!("refraction angle: {}, Reflectance: {}, solar radiation: {}",sp.refracted().to_degrees(), sp.reflectance(), sp.solar_radiation());
         let dates = get_dt_range(datetime!(2010-01-01 00:00:00), datetime!(
-        2010-01-02 00:00:00), 86400);
+        2012-01-02 00:00:00), 2000000);
     
 
     let mut positions:Vec<SunPosition> = Vec::with_capacity(dates.len());
@@ -58,7 +58,7 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
     };
 
     let mut elev_angle:Vec<f64> = Vec::with_capacity(positions.capacity());
-   for position in positions.iter(){
+    for position in positions.iter(){
         elev_angle.push(position.elev_angle)
    }
 
@@ -83,32 +83,6 @@ fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
    let _ = plot("./radiation.png", 2000,2000,radvec, 0.0..86400.0, 0.0..1360.0);
 
-//     let root = BitMapBackend::new("./test.png", 
-//     (10000, 2000)).into_drawing_area();
-//     root.fill(&WHITE)?;
-//     let mut chart = ChartBuilder::on(&root)
-//         .x_label_area_size(900)
-//         .y_label_area_size(900)
-//         .build_cartesian_2d(0f64..1000000f64, -180f64..180f64)?;
-
-//     chart
-//         .configure_mesh()
-//         .x_labels(30)
-//         .y_labels(30)
-//         .draw()?;
-
-//     chart
-//         .draw_series(LineSeries::new(points, &BLACK))?;
-
-//     chart
-//         .configure_series_labels()
-//         .background_style(BLACK.mix(0.8))
-//         .border_style(BLACK)
-//         .draw()?;
-
-//     root.present()?;
-
-//     Ok(())
 }
  
 struct SunPosition{
@@ -136,22 +110,22 @@ impl SunPosition{
     }}
 
     
-    fn reflection(&self) -> f64{ //the model doesn't work if your ZA is greater than 90. Need some logic to handle. 
+    fn reflectance(&self) -> f64{ //the model doesn't work if your ZA is greater than 90. Need some logic to handle. 
         
         match self.sunup{ 
 
             true =>
             {
-            let angle:f64 = self.solar_zenith_angle.to_radians();
-            let n_i = 1.000;
-            let n_t = 1.333;
-            let r_s: f64 = ((n_i * angle.cos()) - (n_t * self.refracted().cos())) / ((n_i*angle.cos()) + (n_t*self.refracted().cos()));
-            let r_p: f64 = ((n_i*self.refracted().cos()) - (n_t*angle.cos())) / ((n_i*self.refracted().cos()) + (n_t * angle.cos()));
-            let r: f64 = 0.5 * (r_s + r_p);
-            let reflectance:f64 = r.powi(2);
-            reflectance
+                let angle:f64 = self.solar_zenith_angle.to_radians();
+                let n_i = 1.000;
+                let n_t = 1.333;
+                let r_s: f64 = ((n_i * angle.cos()) - (n_t * self.refracted().cos())) / ((n_i*angle.cos()) + (n_t*self.refracted().cos()));
+                let r_p: f64 = ((n_i*self.refracted().cos()) - (n_t*angle.cos())) / ((n_i*self.refracted().cos()) + (n_t * angle.cos()));
+                let r: f64 = 0.5 * (r_s + r_p);
+                let reflectance:f64 = r.powi(2);
+                reflectance
 
-        },
+                },
 
             false => {0.0}}
     }
@@ -389,14 +363,14 @@ fn plot(path:&str, dimx:u32, dimy:u32, datavec:Vec<(f64,f64)>, xcart:Range<f64>,
 
 }
 
-//Next item of business: calculate the heating which happens for the radiation - start in 1-d w/ a control surface
-// also: setting up the box model for the lake
-// also: refraction Done✅
-// also: reflection from the surface Done ✅
+//Next item of business: 
+// setting up the box model for the lake
+// refraction Done✅
+// reflection from the surface Done ✅
 
 
 //A lot of this stuff depends on the same fixed sun position parameters. It would be ideal to
 //get all the sun params into a unified position in memory and then access all of it from each
 //function as a thread. This would make it a lot faster to calculate the later steps. 
 
-//TODO: Put the attributes you want in a giant polars table
+//TODO: Put the attributes you want into a polars table
