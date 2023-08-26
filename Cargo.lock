@@ -500,6 +500,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbase"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86bc97a72d9aca92b9a8095b3bfe8f691c54bb15eefaacec53882604062428bf"
+dependencies = [
+ "byteorder",
+ "time 0.3.25",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -971,6 +981,7 @@ dependencies = [
  "polars",
  "rust_decimal",
  "rust_decimal_macros",
+ "shapefile",
  "time 0.3.25",
 ]
 
@@ -1999,6 +2010,16 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "shapefile"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96e5f3746704e7b520956ef4906aa15e24e80b351c41bdfbf11bb086b12c48af"
+dependencies = [
+ "byteorder",
+ "dbase",
 ]
 
 [[package]]
