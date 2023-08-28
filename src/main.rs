@@ -7,7 +7,7 @@ use time::{PrimitiveDateTime, Duration};
 use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 
-
+mod box_pack;
 
 fn main() -> ()  { //Result<(), Box<dyn std::error::Error>>
 
@@ -373,4 +373,25 @@ fn plot(path:&str, dimx:u32, dimy:u32, datavec:Vec<(f64,f64)>, xcart:Range<f64>,
 //get all the sun params into a unified position in memory and then access all of it from each
 //function as a thread. This would make it a lot faster to calculate the later steps. 
 
-//TODO: Put the attributes you want into a polars table
+//TODO: Put the attributes you want in a giant polars table
+
+//box model: set up a box struct. Do the model analysis setup. 
+
+struct ControlVolume{
+    x_start:f32, //y_start:f32, 
+    x_end:f32, //y_end:f32,
+    bc_upper: BoundaryConditionType,
+    bc_lower: BoundaryConditionType
+}
+
+enum BoundaryConditionType{
+    SetTemp(f32),
+    SetFlux(f32)
+}
+
+// impl ControlVolume{
+
+//     fn 
+
+
+// }
