@@ -1,7 +1,7 @@
 pub mod box_pack{
     use shapefile::record::polygon::GenericPolygon;
     use shapefile::Error;
-    use std::io::ErrorKind;
+
 
     
     pub fn input_lake_shapes(filepath:&str) -> Result<Vec<GenericPolygon<shapefile::Point>>, Error> {
@@ -22,14 +22,32 @@ pub mod box_pack{
     }
 
 
-    pub fn select_lake_shape(index:usize, inputresult: Result<Vec<GenericPolygon<shapefile::Point>>, Error>)  {
+    pub fn select_lake_shape(index:usize, inputresult: Result<Vec<GenericPolygon<shapefile::Point>>, Error>) -> Option<GenericPolygon<shapefile::Point>>  {
 
-        let test = match inputresult{
-            Ok(_) => inputresult,
-            Err(error) => Err(error)
-        };
+        /* This function takes an index and an input set of lake shapes and outputs an Option with either the selected GenericPolygon or None. 
+        If the input result from `input_lake_shapes()` is OK, it will unwrap the `Result<_,_>` to a `Vec<...>` and try to index it. 
 
+        the `.get()` method returns an `Option<T>`. This `Option<T>` is then matched to return either the successful return polygon or None to the calling context. 
+
+        If the input result is not ok, this function also returns `None`. 
         
+         */
+
+       if inputresult.is_ok(){
+            let set_of_shapes = inputresult.unwrap().to_owned();
+            let indexresult = set_of_shapes.get(index);
+            match indexresult{
+                Some(i) => {
+                    let output = i;
+                    Some(output.to_owned())
+            },
+                None => {
+                    println!("Index not found in the vector! The vector's length is {}", set_of_shapes.len());
+                    None}
+            }
+       } else {
+            println!("Input read invalid!");
+            None}
     
     }
 }
