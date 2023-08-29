@@ -50,5 +50,19 @@ pub mod box_pack{
             None}
     
     }
+
+    pub fn polygon_to_grid(value:){
+        /*
+        This function interprets each point in the polygon and then turns it into a grid of squares/boxes which approximate the shape based on the density of squares/size of square.
+         */
+    }
+
+    enum Units{
+        Centimeter, 
+        Meter,
+        Inch,
+        Foot
+    }
+
 }
 
