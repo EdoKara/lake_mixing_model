@@ -2,6 +2,8 @@
 name = "lake_mixing_model"
 version = "0.1.0"
 edition = "2021"
+authors = ["Andrew J Brown <brown.ajb@gmail.com>"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
